@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Debate {
+  id        String       @id @default(auto()) @map("_id") @db.ObjectId
+  topic     String
+  /// User's raw input when it differed from the neutral `topic`
+  originalTopic String?
+  status    DebateStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  turns     Turn[]
+  /// Stored when debate ends: { "bullets": string[], "closingRemark"?: string }
+  debateSummary Json?
+}
+
+model Turn {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  debateId  String      @db.ObjectId
+  debate    Debate      @relation(fields: [debateId], references: [id], onDelete: Cascade)
+  role      SpeakerRole
+  content   String
+  sequence  Int
+  createdAt DateTime    @default(now())
+
+  @@index([debateId])
+}
+
+enum DebateStatus {
+  ACTIVE
+  ENDED
+}
+
+enum SpeakerRole {
+  PRO
+  CONTRA
+}
