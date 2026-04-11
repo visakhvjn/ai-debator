@@ -527,12 +527,24 @@ export function MarketingHome() {
                     Standard model quality &amp; sensible limits
                   </li>
                 </ul>
-                <Link
-                  href={user ? "/debate" : "/"}
-                  className="mt-8 block w-full rounded-full border border-slate-200 py-3 text-center text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-800"
-                >
-                  {user ? "Use Basic" : "Sign in to start"}
-                </Link>
+                {user ? (
+                  <Link
+                    href="/debate"
+                    className="mt-8 block w-full rounded-full border border-slate-200 py-3 text-center text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-800"
+                  >
+                    Use Basic
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => void onGoogleSignIn()}
+                    disabled={signingIn || !isFirebaseConfigured()}
+                    className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 py-3 text-center text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-800 dark:disabled:hover:bg-transparent"
+                  >
+                    <GoogleIcon className="h-4 w-4 text-[#4285F4]" />
+                    {signingIn ? "Signing in…" : "Sign in to start"}
+                  </button>
+                )}
               </div>
 
               {/* Plus */}
@@ -596,15 +608,10 @@ export function MarketingHome() {
         </section>
 
         <footer className="border-t border-slate-200 bg-white py-10 dark:border-slate-800 dark:bg-slate-900">
-          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6">
+          <div className="mx-auto max-w-6xl px-4 text-center sm:px-6 sm:text-left">
             <p className="text-sm text-slate-500 dark:text-slate-400">
               © {new Date().getFullYear()} AI Debator
             </p>
-            <div className="flex gap-4 text-sm">
-              <Link href="/debate" className="text-sky-600 hover:underline dark:text-sky-400">
-                Debate room
-              </Link>
-            </div>
           </div>
         </footer>
       </main>
