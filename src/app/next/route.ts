@@ -2,8 +2,13 @@ import { NextResponse } from "next/server";
 import { SpeakerRole } from "@prisma/client";
 import { generateDebateTurn } from "@/lib/debate-ai";
 import { prisma } from "@/lib/prisma";
+import { requireAuthUser } from "@/lib/require-auth";
 
 export async function POST(req: Request) {
+  const authResult = await requireAuthUser(req);
+  if (authResult instanceof NextResponse) return authResult;
+  const { uid } = authResult;
+
   if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json(
       { error: "OPENAI_API_KEY is not configured" },
@@ -30,7 +35,7 @@ export async function POST(req: Request) {
       },
     });
 
-    if (!debate) {
+    if (!debate || debate.userId !== uid) {
       return NextResponse.json({ error: "Debate not found" }, { status: 404 });
     }
 

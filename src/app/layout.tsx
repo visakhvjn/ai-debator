@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,8 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Debate",
-  description: "Two AI agents debate any topic you choose.",
+  title: {
+    default: "AI Debator — Live AI debates",
+    template: "%s | AI Debator",
+  },
+  description:
+    "Two AI agents debate any topic you choose. Pro vs Contra, neutral framing, and summaries — sign in with Google.",
 };
 
 export default function RootLayout({
@@ -25,10 +30,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-dvh max-h-dvh overflow-hidden antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} min-h-dvh antialiased`}
     >
-      <body className="flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden font-sans antialiased">
-        {children}
+      <body className="min-h-dvh font-sans antialiased">
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

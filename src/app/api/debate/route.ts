@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuthUser } from "@/lib/require-auth";
 
 type StoredSummary = {
   bullets?: string[];
@@ -7,6 +8,10 @@ type StoredSummary = {
 };
 
 export async function GET(req: Request) {
+  const authResult = await requireAuthUser(req);
+  if (authResult instanceof NextResponse) return authResult;
+  const { uid } = authResult;
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id")?.trim();
@@ -21,7 +26,7 @@ export async function GET(req: Request) {
       },
     });
 
-    if (!debate) {
+    if (!debate || debate.userId !== uid) {
       return NextResponse.json({ error: "Debate not found" }, { status: 404 });
     }
 

@@ -9,6 +9,8 @@ datasource db {
 
 model Debate {
   id        String       @id @default(auto()) @map("_id") @db.ObjectId
+  /// Firebase Auth UID — debates are scoped per user on the API
+  userId    String
   topic     String
   /// User's raw input when it differed from the neutral `topic`
   originalTopic String?
@@ -18,6 +20,8 @@ model Debate {
   turns     Turn[]
   /// Stored when debate ends: { "bullets": string[], "closingRemark"?: string }
   debateSummary Json?
+
+  @@index([userId])
 }
 
 model Turn {

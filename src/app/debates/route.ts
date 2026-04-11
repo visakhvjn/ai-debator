@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuthUser } from "@/lib/require-auth";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const authResult = await requireAuthUser(req);
+  if (authResult instanceof NextResponse) return authResult;
+  const { uid } = authResult;
+
   try {
     const debates = await prisma.debate.findMany({
+      where: { userId: uid },
       orderBy: { updatedAt: "desc" },
       take: 80,
       select: {
