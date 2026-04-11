@@ -1,7 +1,9 @@
 "use client";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { CreditsModal } from "@/components/debate/CreditsModal";
 import { authedFetch } from "@/lib/client-authed-fetch";
+import { markDebatorLogoutIntent } from "@/lib/logout-intent";
 import { useRouter } from "next/navigation";
 import {
   useCallback,
@@ -25,6 +27,34 @@ type SidebarDebate = {
   updatedAt: string;
   turnCount: number;
 };
+
+type CreditsState = {
+  used: number;
+  remaining: number;
+  limit: number;
+  resetsAt: string;
+  unlimited?: boolean;
+};
+
+function parseCredits(raw: unknown): CreditsState | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  if (
+    typeof o.used === "number" &&
+    typeof o.remaining === "number" &&
+    typeof o.limit === "number" &&
+    typeof o.resetsAt === "string"
+  ) {
+    return {
+      used: o.used,
+      remaining: o.remaining,
+      limit: o.limit,
+      resetsAt: o.resetsAt,
+      unlimited: o.unlimited === true,
+    };
+  }
+  return null;
+}
 
 function formatListTime(iso: string) {
   try {
@@ -153,11 +183,17 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [topicBusy, setTopicBusy] = useState(false);
   const [endBusy, setEndBusy] = useState(false);
+  const [credits, setCredits] = useState<CreditsState | null>(null);
+  const [creditsModalOpen, setCreditsModalOpen] = useState(false);
 
   const endedRef = useRef(false);
   endedRef.current = ended;
+  const creditsRef = useRef<CreditsState | null>(null);
+  creditsRef.current = credits;
 
   const debateActive = Boolean(debateId && !ended && !summary);
+  const outOfCredits =
+    credits !== null && !credits.unlimited && credits.remaining <= 0;
 
   const handleLogout = useCallback(async () => {
     setLogoutBusy(true);
@@ -175,8 +211,9 @@ export default function Home() {
           /* still sign out */
         }
       }
+      markDebatorLogoutIntent();
       await signOut();
-      router.push("/");
+      router.replace("/");
       router.refresh();
     } finally {
       setLogoutBusy(false);
@@ -196,6 +233,8 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) return;
       setSidebarDebates(data.debates ?? []);
+      const c = parseCredits(data.credits);
+      if (c) setCredits(c);
     } catch {
       /* ignore */
     } finally {
@@ -221,6 +260,8 @@ export default function Home() {
       }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not load debate");
+      const c = parseCredits(data.credits);
+      if (c) setCredits(c);
       const d = data.debate;
       setSelectedId(d.id);
       setDebateId(d.id);
@@ -274,6 +315,12 @@ export default function Home() {
       setError("End the current debate before starting a new one.");
       return;
     }
+    if (credits !== null && !credits.unlimited && credits.remaining <= 0) {
+      setError(
+        "You've used today's messages (50 per UTC day). Credits reset at midnight UTC.",
+      );
+      return;
+    }
     const topic = topicInput.trim();
     if (!topic) {
       setError("Type a topic to start.");
@@ -294,7 +341,15 @@ export default function Home() {
         return;
       }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Could not start debate");
+      if (!res.ok) {
+        if (res.status === 429) {
+          const c = parseCredits(data.credits);
+          if (c) setCredits(c);
+        }
+        throw new Error(data.error || "Could not start debate");
+      }
+      const cAfter = parseCredits(data.credits);
+      if (cAfter) setCredits(cAfter);
       const id = data.debateId as string;
       setDebateId(id);
       setSelectedId(id);
@@ -313,7 +368,7 @@ export default function Home() {
     } finally {
       setTopicBusy(false);
     }
-  }, [topicInput, refreshDebates, debateActive, router]);
+  }, [topicInput, refreshDebates, debateActive, router, credits]);
 
   const endDebate = useCallback(async () => {
     if (!debateId) return;
@@ -354,6 +409,16 @@ export default function Home() {
     const ac = new AbortController();
 
     const run = async () => {
+      if (
+        creditsRef.current !== null &&
+        !creditsRef.current.unlimited &&
+        creditsRef.current.remaining <= 0
+      ) {
+        setThinking(null);
+        if (debateId) void loadDebate(debateId);
+        return;
+      }
+
       const nextIdx = messages.length;
       const nextRole: "PRO" | "CONTRA" =
         nextIdx % 2 === 0 ? "PRO" : "CONTRA";
@@ -378,6 +443,16 @@ export default function Home() {
 
       if (ac.signal.aborted || endedRef.current) return;
 
+      if (
+        creditsRef.current !== null &&
+        !creditsRef.current.unlimited &&
+        creditsRef.current.remaining <= 0
+      ) {
+        setThinking(null);
+        if (debateId) void loadDebate(debateId);
+        return;
+      }
+
       const res = await authedFetch("/next", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -393,13 +468,25 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) {
         if (!ac.signal.aborted) {
-          setError(data.error || "Failed to get the next reply");
+          if (data.credits) {
+            const c = parseCredits(data.credits);
+            if (c) setCredits(c);
+          }
           setThinking(null);
+          if (debateId) await loadDebate(debateId);
+          setError(
+            typeof data.error === "string" && data.error.trim()
+              ? data.error.trim()
+              : "Failed to get the next reply",
+          );
         }
         return;
       }
 
       if (ac.signal.aborted || endedRef.current) return;
+
+      const cNext = parseCredits(data.credits);
+      if (cNext) setCredits(cNext);
 
       setThinking(null);
       setMessages((m) => [
@@ -411,6 +498,15 @@ export default function Home() {
           sequence: data.sequence,
         },
       ]);
+
+      if (
+        cNext &&
+        !cNext.unlimited &&
+        cNext.remaining <= 0 &&
+        debateId
+      ) {
+        await loadDebate(debateId);
+      }
     };
 
     void run();
@@ -418,7 +514,7 @@ export default function Home() {
     return () => {
       ac.abort();
     };
-  }, [debateId, messages.length, ended, router]);
+  }, [debateId, messages.length, ended, router, loadDebate]);
 
   const isNewChat = selectedId === null;
   const showComposer = isNewChat && !loadingDebate;
@@ -452,19 +548,65 @@ export default function Home() {
       {/* Sidebar — past debates (tablet/desktop only) */}
       <aside className="hidden h-dvh max-h-dvh min-h-0 w-72 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 md:flex">
         <div className="shrink-0 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
-          <h1 className="text-lg font-semibold tracking-tight">AI Debate</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Pro vs Contra
-          </p>
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h1 className="text-lg font-semibold tracking-tight">AI Debate</h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Pro vs Contra
+              </p>
+            </div>
+            {credits ? (
+              <button
+                type="button"
+                onClick={() => setCreditsModalOpen(true)}
+                title={
+                  credits.unlimited
+                    ? "Your OpenAI key — unlimited messages. Click for details."
+                    : `${credits.remaining} message${credits.remaining === 1 ? "" : "s"} left today (each Pro or Contra reply uses 1). Resets ${new Date(credits.resetsAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })} UTC. Click for details.`
+                }
+                className={`shrink-0 cursor-pointer rounded-lg border px-2.5 py-1.5 text-right transition hover:opacity-90 active:scale-[0.98] ${
+                  credits.unlimited
+                    ? "border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/40"
+                    : credits.remaining <= 5
+                      ? "border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40"
+                      : "border-sky-200 bg-sky-50 dark:border-sky-800 dark:bg-sky-950/50"
+                }`}
+              >
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Credits
+                </p>
+                <p className="text-base font-bold leading-tight text-slate-900 dark:text-white">
+                  {credits.unlimited ? (
+                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+                      Unlimited
+                    </span>
+                  ) : (
+                    <>
+                      <span className="tabular-nums">{credits.remaining}</span>
+                      <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                        /{credits.limit}
+                      </span>
+                    </>
+                  )}
+                </p>
+              </button>
+            ) : (
+              <span className="shrink-0 text-xs text-slate-400" aria-hidden>
+                …
+              </span>
+            )}
+          </div>
         </div>
         <button
           type="button"
           onClick={startNewChat}
-          disabled={debateActive}
+          disabled={debateActive || outOfCredits}
           title={
             debateActive
               ? "End the current debate before starting a new one"
-              : undefined
+              : outOfCredits
+                ? "No credits left today — resets at midnight UTC"
+                : undefined
           }
           className="mx-3 mt-3 shrink-0 rounded-xl bg-sky-500 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-sky-500 dark:bg-sky-600 dark:hover:bg-sky-500 dark:disabled:hover:bg-sky-600"
         >
@@ -527,11 +669,29 @@ export default function Home() {
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
           <div className="min-w-0">
-            <h2 className="truncate text-base font-semibold text-slate-900 dark:text-slate-50">
-              {isNewChat
-                ? "New debate"
-                : currentTopic || "Debate"}
-            </h2>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <h2 className="truncate text-base font-semibold text-slate-900 dark:text-slate-50">
+                {isNewChat
+                  ? "New debate"
+                  : currentTopic || "Debate"}
+              </h2>
+              {credits ? (
+                <button
+                  type="button"
+                  onClick={() => setCreditsModalOpen(true)}
+                  className={`shrink-0 rounded-md border px-2 py-0.5 text-xs font-bold tabular-nums md:hidden ${
+                    credits.unlimited
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
+                      : credits.remaining <= 5
+                        ? "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+                        : "border-sky-200 bg-sky-50 text-sky-900 dark:border-sky-800 dark:bg-sky-950/50 dark:text-sky-100"
+                  }`}
+                  title="Credits — tap for details"
+                >
+                  {credits.unlimited ? "∞" : `${credits.remaining}/${credits.limit}`}
+                </button>
+              ) : null}
+            </div>
             {!isNewChat && originalUserTopic ? (
               <p className="mt-0.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
                 <span className="font-medium text-slate-600 dark:text-slate-300">
@@ -653,6 +813,23 @@ export default function Home() {
         {/* Composer */}
         {showComposer ? (
           <div className="shrink-0 border-t border-slate-200 bg-white px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-slate-800 dark:bg-slate-900 md:pb-3">
+            {outOfCredits ? (
+              <p
+                className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-center text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+                role="status"
+              >
+                Daily credits used (50 messages per UTC day). Resets at{" "}
+                {credits
+                  ? new Date(credits.resetsAt).toLocaleTimeString(undefined, {
+                      hour: "numeric",
+                      minute: "2-digit",
+                      timeZone: "UTC",
+                      timeZoneName: "short",
+                    })
+                  : "midnight UTC"}
+                .
+              </p>
+            ) : null}
             <form
               className="flex w-full items-stretch gap-2"
               onSubmit={(e) => {
@@ -675,12 +852,12 @@ export default function Home() {
                   }
                 }}
                 placeholder="Type a topic and press Enter or Send…"
-                disabled={topicBusy}
+                disabled={topicBusy || outOfCredits}
                 className="h-11 min-w-0 flex-1 rounded-2xl border border-slate-600 bg-slate-900 px-4 text-sm text-slate-100 caret-sky-300 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/35 disabled:opacity-50 dark:border-slate-500 dark:bg-slate-950 dark:text-slate-50 dark:placeholder:text-slate-500 dark:focus:border-sky-400 dark:focus:ring-sky-400/30"
               />
               <button
                 type="submit"
-                disabled={topicBusy || !topicInput.trim()}
+                disabled={topicBusy || outOfCredits || !topicInput.trim()}
                 className="h-11 shrink-0 rounded-2xl bg-sky-500 px-5 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:opacity-40"
               >
                 {topicBusy ? "Preparing…" : "Send"}
@@ -747,12 +924,14 @@ export default function Home() {
         <button
           type="button"
           onClick={startNewChat}
-          disabled={debateActive}
+          disabled={debateActive || outOfCredits}
           aria-label="New debate"
           title={
             debateActive
               ? "End the current debate before starting a new one"
-              : "New debate"
+              : outOfCredits
+                ? "No credits left today"
+                : "New debate"
           }
           className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-sky-500 text-white shadow-lg shadow-sky-500/30 transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
         >
@@ -767,6 +946,13 @@ export default function Home() {
           </svg>
         </button>
       </div>
+
+      <CreditsModal
+        open={creditsModalOpen}
+        onClose={() => setCreditsModalOpen(false)}
+        credits={credits}
+        onUpdated={() => void refreshDebates()}
+      />
     </div>
   );
 }

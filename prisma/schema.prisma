@@ -7,6 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Per-user settings (Firebase UID as id)
+model UserSettings {
+  id           String  @id @map("_id")
+  /// AES-256-GCM envelope (base64): iv + authTag + ciphertext
+  openaiKeyEnc String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 model Debate {
   id        String       @id @default(auto()) @map("_id") @db.ObjectId
   /// Firebase Auth UID — debates are scoped per user on the API

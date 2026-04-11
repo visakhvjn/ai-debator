@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getCreditsSnapshot } from "@/lib/daily-credits";
 import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/lib/require-auth";
 
@@ -39,6 +40,8 @@ export async function GET(req: Request) {
       if (typeof s.closingRemark === "string") closingRemark = s.closingRemark;
     }
 
+    const credits = await getCreditsSnapshot(uid);
+
     return NextResponse.json({
       debate: {
         id: debate.id,
@@ -55,6 +58,7 @@ export async function GET(req: Request) {
         summaryBullets,
         closingRemark,
       },
+      credits,
     });
   } catch (e) {
     console.error(e);

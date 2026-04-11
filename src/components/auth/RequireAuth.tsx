@@ -1,13 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { isFirebaseConfigured } from "@/lib/firebase";
+import { consumeDebatorLogoutIntent } from "@/lib/logout-intent";
 
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  /** After intentional logout, skip the next unauthenticated redirect (avoids ?signin=required). */
+  const skipSignInRequiredOnce = useRef(false);
 
   useEffect(() => {
     if (loading) return;
@@ -16,6 +19,15 @@ export function RequireAuth({ children }: { children: ReactNode }) {
       return;
     }
     if (!user) {
+      if (consumeDebatorLogoutIntent()) {
+        skipSignInRequiredOnce.current = true;
+        router.replace("/");
+        return;
+      }
+      if (skipSignInRequiredOnce.current) {
+        skipSignInRequiredOnce.current = false;
+        return;
+      }
       router.replace("/?signin=required");
     }
   }, [loading, user, router]);

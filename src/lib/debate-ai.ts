@@ -2,9 +2,9 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import type { SpeakerRole } from "@prisma/client";
 
-const openai = createOpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+function openaiClient(apiKey: string) {
+  return createOpenAI({ apiKey });
+}
 
 function buildTranscript(
   topic: string,
@@ -28,7 +28,9 @@ function buildTranscript(
  */
 export async function neutralizeTopicForDebate(
   userTopic: string,
+  apiKey: string,
 ): Promise<string> {
+  const openai = openaiClient(apiKey);
   const { text } = await generateText({
     model: openai("gpt-4o-mini"),
     system: `You rephrase what the user typed into ONE neutral, debatable proposition.
@@ -63,8 +65,10 @@ export async function generateDebateTurn(params: {
   topic: string;
   role: SpeakerRole;
   priorTurns: { role: SpeakerRole; content: string }[];
+  apiKey: string;
 }): Promise<string> {
-  const { topic, role, priorTurns } = params;
+  const { topic, role, priorTurns, apiKey } = params;
+  const openai = openaiClient(apiKey);
   const transcript = buildTranscript(topic, priorTurns);
 
   const noRepeatRules =
@@ -139,8 +143,10 @@ function parseSummarySections(raw: string): {
 export async function generateDebateSummary(params: {
   topic: string;
   turns: { role: SpeakerRole; content: string }[];
+  apiKey: string;
 }): Promise<DebateSummaryResult> {
-  const { topic, turns } = params;
+  const { topic, turns, apiKey } = params;
+  const openai = openaiClient(apiKey);
   if (turns.length === 0) {
     return {
       bullets: ["No arguments were exchanged before the debate ended."],

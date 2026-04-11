@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getCreditsSnapshot } from "@/lib/daily-credits";
 import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/lib/require-auth";
 
@@ -21,6 +22,8 @@ export async function GET(req: Request) {
       },
     });
 
+    const credits = await getCreditsSnapshot(uid);
+
     return NextResponse.json({
       debates: debates.map((d) => ({
         id: d.id,
@@ -29,6 +32,7 @@ export async function GET(req: Request) {
         updatedAt: d.updatedAt.toISOString(),
         turnCount: d._count.turns,
       })),
+      credits,
     });
   } catch (e) {
     console.error(e);
