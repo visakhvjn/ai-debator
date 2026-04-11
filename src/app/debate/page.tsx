@@ -162,13 +162,26 @@ export default function Home() {
   const handleLogout = useCallback(async () => {
     setLogoutBusy(true);
     try {
+      if (debateActive && debateId) {
+        setEnded(true);
+        setThinking(null);
+        try {
+          await authedFetch("/end", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ debateId }),
+          });
+        } catch {
+          /* still sign out */
+        }
+      }
       await signOut();
       router.push("/");
       router.refresh();
     } finally {
       setLogoutBusy(false);
     }
-  }, [router, signOut]);
+  }, [router, signOut, debateActive, debateId]);
 
   const messagesScrollRef = useRef<HTMLDivElement>(null);
   const summarySectionRef = useRef<HTMLDivElement>(null);

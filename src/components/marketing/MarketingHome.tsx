@@ -7,6 +7,215 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { signInWithGoogle } from "@/components/auth/signInWithGoogle";
 import { isFirebaseConfigured } from "@/lib/firebase";
 
+function IconNeutralFraming({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      aria-hidden
+    >
+      <path strokeLinecap="round" d="M12 4v16" />
+      <path strokeLinecap="round" d="M5 10h14" />
+      <path
+        strokeLinejoin="round"
+        d="M8 10v2.5L6 18h6l-2-5.5V10M16 10v2.5L14 18h6l-2-5.5V10"
+      />
+    </svg>
+  );
+}
+
+function IconTurnDebate({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
+      />
+    </svg>
+  );
+}
+
+function IconSummary({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+      />
+    </svg>
+  );
+}
+
+/** Decorative scene: two sides, one topic — no implementation details. */
+function DebateSceneIllustration({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 320 240"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-labelledby="debate-scene-title"
+    >
+      <title id="debate-scene-title">
+        Illustration of two viewpoints in conversation around a shared topic
+      </title>
+      <ellipse
+        cx="160"
+        cy="200"
+        rx="120"
+        ry="28"
+        className="fill-slate-200/60 dark:fill-slate-800/50"
+      />
+      <rect
+        x="88"
+        y="16"
+        width="144"
+        height="36"
+        rx="18"
+        className="fill-white stroke-slate-200 dark:fill-slate-800/90 dark:stroke-slate-600"
+        strokeWidth="1.5"
+      />
+      <line
+        x1="108"
+        y1="30"
+        x2="212"
+        y2="30"
+        className="stroke-slate-300 dark:stroke-slate-500"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="108"
+        y1="40"
+        x2="180"
+        y2="40"
+        className="stroke-slate-200 dark:stroke-slate-600"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M52 128 Q160 168 268 128"
+        className="stroke-slate-300/80 dark:stroke-slate-600"
+        strokeWidth="1.5"
+        strokeDasharray="5 8"
+        strokeLinecap="round"
+      />
+      <rect
+        x="24"
+        y="76"
+        width="132"
+        height="92"
+        rx="14"
+        className="fill-sky-100 stroke-sky-300 dark:fill-sky-950/70 dark:stroke-sky-700"
+        strokeWidth="1.5"
+      />
+      <circle cx="56" cy="108" r="18" className="fill-sky-500" />
+      <text
+        x="56"
+        y="114"
+        textAnchor="middle"
+        className="fill-white text-[13px] font-bold"
+        style={{ fontFamily: "system-ui, sans-serif" }}
+      >
+        P
+      </text>
+      <line
+        x1="44"
+        y1="136"
+        x2="130"
+        y2="136"
+        className="stroke-sky-400/50 dark:stroke-sky-600/60"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="44"
+        y1="148"
+        x2="110"
+        y2="148"
+        className="stroke-sky-400/40 dark:stroke-sky-600/50"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="44"
+        y1="160"
+        x2="98"
+        y2="160"
+        className="stroke-sky-400/35 dark:stroke-sky-600/45"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <rect
+        x="164"
+        y="76"
+        width="132"
+        height="92"
+        rx="14"
+        className="fill-orange-100 stroke-orange-300 dark:fill-orange-950/50 dark:stroke-orange-800"
+        strokeWidth="1.5"
+      />
+      <circle cx="264" cy="108" r="18" className="fill-orange-500" />
+      <text
+        x="264"
+        y="114"
+        textAnchor="middle"
+        className="fill-white text-[13px] font-bold"
+        style={{ fontFamily: "system-ui, sans-serif" }}
+      >
+        C
+      </text>
+      <line
+        x1="190"
+        y1="136"
+        x2="276"
+        y2="136"
+        className="stroke-orange-400/50 dark:stroke-orange-600/60"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="210"
+        y1="148"
+        x2="276"
+        y2="148"
+        className="stroke-orange-400/40 dark:stroke-orange-600/50"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="222"
+        y1="160"
+        x2="276"
+        y2="160"
+        className="stroke-orange-400/35 dark:stroke-orange-600/45"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function GoogleIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden>
@@ -186,29 +395,40 @@ export function MarketingHome() {
               readable messages, and history you can revisit from the sidebar.
             </p>
             <div className="mt-14 grid gap-10 sm:grid-cols-3">
-              {[
-                {
-                  title: "Neutral framing",
-                  body: "Biased or emotional prompts are rewritten into a balanced claim so both sides can argue fairly.",
-                },
-                {
-                  title: "Turn-by-turn debate",
-                  body: "Pro and Contra alternate with timed pauses so you can read each reply before the next one lands.",
-                },
-                {
-                  title: "Close with a summary",
-                  body: "End whenever you like and get bullet takeaways plus a short closing remark on what the exchange suggested.",
-                },
-              ].map((item) => (
+              {(
+                [
+                  {
+                    title: "Neutral framing",
+                    body: "Biased or emotional prompts are rewritten into a balanced claim so both sides can argue fairly.",
+                    Icon: IconNeutralFraming,
+                  },
+                  {
+                    title: "Turn-by-turn debate",
+                    body: "Pro and Contra alternate with timed pauses so you can read each reply before the next one lands.",
+                    Icon: IconTurnDebate,
+                  },
+                  {
+                    title: "Close with a summary",
+                    body: "End whenever you like and get bullet takeaways plus a short closing remark on what the exchange suggested.",
+                    Icon: IconSummary,
+                  },
+                ] as const
+              ).map(({ title, body, Icon }) => (
                 <div
-                  key={item.title}
-                  className="rounded-2xl border border-slate-100 bg-slate-50/80 p-6 dark:border-slate-800 dark:bg-slate-900/80"
+                  key={title}
+                  className="rounded-2xl border border-slate-100 bg-slate-50/80 p-6 shadow-sm transition-shadow duration-300 hover:shadow-xl hover:shadow-slate-300/70 dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none dark:hover:shadow-xl dark:hover:shadow-black/50"
                 >
+                  <div
+                    className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-950/55 dark:text-sky-400"
+                    aria-hidden
+                  >
+                    <Icon className="h-6 w-6 shrink-0" />
+                  </div>
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                    {item.title}
+                    {title}
                   </h3>
                   <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-                    {item.body}
+                    {body}
                   </p>
                 </div>
               ))}
@@ -244,15 +464,10 @@ export function MarketingHome() {
                 </li>
               </ul>
             </div>
-            <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-sky-50 to-white p-8 dark:border-slate-700 dark:from-sky-950/40 dark:to-slate-900">
-              <p className="text-sm font-medium uppercase tracking-wider text-sky-700 dark:text-sky-300">
-                Under the hood
-              </p>
-              <p className="mt-3 text-slate-700 dark:text-slate-200">
-                Each run is stored with its turns and optional end-of-debate
-                summary. Agents are instructed to stay in role, avoid repeating
-                points, and keep language simple so the debate stays easy to
-                follow.
+            <div className="flex flex-col items-center justify-center rounded-3xl border border-slate-200 bg-gradient-to-br from-sky-50 to-white px-6 py-10 dark:border-slate-700 dark:from-sky-950/40 dark:to-slate-900">
+              <DebateSceneIllustration className="h-auto w-full max-w-[17.5rem] text-slate-800 dark:text-slate-100" />
+              <p className="mt-6 text-center text-sm font-medium text-slate-600 dark:text-slate-400">
+                Two perspectives, one thread — you steer the conversation.
               </p>
             </div>
           </div>
@@ -281,12 +496,23 @@ export function MarketingHome() {
                   Free
                 </p>
                 <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                  Everything you need to try AI Debator and run real debates.
+                  Run real debates by connecting your own OpenAI API key — no
+                  subscription from us on Basic.
                 </p>
                 <ul className="mt-8 flex-1 space-y-3 text-sm text-slate-700 dark:text-slate-300">
                   <li className="flex gap-2">
                     <span className="text-emerald-500">●</span>
                     Pro &amp; Contra agents with timed turns
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-emerald-500">●</span>
+                    <span>
+                      <strong className="font-semibold text-slate-900 dark:text-white">
+                        Your OpenAI API key
+                      </strong>
+                      — add your key to run the app; usage is billed by OpenAI,
+                      not by AI Debator
+                    </span>
                   </li>
                   <li className="flex gap-2">
                     <span className="text-emerald-500">●</span>
