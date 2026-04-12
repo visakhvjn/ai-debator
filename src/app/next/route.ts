@@ -72,8 +72,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const nextRole: SpeakerRole =
-      debate.turns.length % 2 === 0 ? "PRO" : "CONTRA";
+    const aiTurnCount = debate.turns.filter(
+      (t) => t.role === "PRO" || t.role === "CONTRA",
+    ).length;
+    const nextRole: SpeakerRole = aiTurnCount % 2 === 0 ? "PRO" : "CONTRA";
 
     let content: string;
     try {

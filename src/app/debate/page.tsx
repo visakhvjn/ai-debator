@@ -15,10 +15,14 @@ import {
 
 type Turn = {
   turnId: string;
-  role: "PRO" | "CONTRA";
+  role: "PRO" | "CONTRA" | "USER";
   content: string;
   sequence: number;
 };
+
+function proContraTurnCount(turns: Turn[]): number {
+  return turns.filter((t) => t.role === "PRO" || t.role === "CONTRA").length;
+}
 
 type SidebarDebate = {
   id: string;
@@ -123,6 +127,25 @@ function MessageBubble({
   );
 }
 
+function UserMessageBubble({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex w-full gap-2 justify-start">
+      <div
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-100 text-xs font-bold text-violet-800 dark:bg-violet-900/60 dark:text-violet-200"
+        aria-hidden
+      >
+        U
+      </div>
+      <div className="max-w-[min(100%,28rem)] rounded-2xl rounded-tl-sm border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm leading-relaxed text-slate-800 shadow-sm dark:border-violet-800/60 dark:bg-violet-950/35 dark:text-slate-100">
+        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-300">
+          You
+        </p>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function ThinkingRow({ role }: { role: "PRO" | "CONTRA" }) {
   const isPro = role === "PRO";
   return (
@@ -185,6 +208,8 @@ export default function Home() {
   const [endBusy, setEndBusy] = useState(false);
   const [credits, setCredits] = useState<CreditsState | null>(null);
   const [creditsModalOpen, setCreditsModalOpen] = useState(false);
+  const [interjectInput, setInterjectInput] = useState("");
+  const [interjectBusy, setInterjectBusy] = useState(false);
 
   const endedRef = useRef(false);
   endedRef.current = ended;
@@ -272,6 +297,7 @@ export default function Home() {
           : null,
       );
       setMessages(d.turns ?? []);
+      setInterjectInput("");
       const isEnded = d.status === "ENDED";
       setEnded(isEnded);
       if (isEnded && d.summaryBullets?.length) {
@@ -308,6 +334,7 @@ export default function Home() {
     setThinking(null);
     setError(null);
     setEndBusy(false);
+    setInterjectInput("");
   }, [debateActive]);
 
   const startDebate = useCallback(async () => {
@@ -419,9 +446,9 @@ export default function Home() {
         return;
       }
 
-      const nextIdx = messages.length;
+      const pc = proContraTurnCount(messages);
       const nextRole: "PRO" | "CONTRA" =
-        nextIdx % 2 === 0 ? "PRO" : "CONTRA";
+        pc % 2 === 0 ? "PRO" : "CONTRA";
       setThinking(nextRole);
 
       try {
@@ -515,6 +542,56 @@ export default function Home() {
       ac.abort();
     };
   }, [debateId, messages.length, ended, router, loadDebate]);
+
+  const sendInterjection = useCallback(async () => {
+    if (!debateId || !debateActive) return;
+    const text = interjectInput.trim();
+    if (!text) return;
+    setError(null);
+    setInterjectBusy(true);
+    try {
+      const res = await authedFetch("/interject", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ debateId, content: text }),
+      });
+      if (res.status === 401) {
+        router.replace("/?signin=required");
+        return;
+      }
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(
+          typeof data.error === "string" && data.error.trim()
+            ? data.error.trim()
+            : "Could not send your message",
+        );
+      }
+      const c = parseCredits(data.credits);
+      if (c) setCredits(c);
+      setInterjectInput("");
+      setMessages((m) => [
+        ...m,
+        {
+          turnId: data.turnId,
+          role: data.role as Turn["role"],
+          content: data.content,
+          sequence: data.sequence,
+        },
+      ]);
+      await refreshDebates();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setInterjectBusy(false);
+    }
+  }, [
+    debateId,
+    debateActive,
+    interjectInput,
+    router,
+    refreshDebates,
+  ]);
 
   const isNewChat = selectedId === null;
   const showComposer = isNewChat && !loadingDebate;
@@ -702,7 +779,7 @@ export default function Home() {
             ) : null}
             {!isNewChat && debateActive ? (
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Agents reply every 10 seconds
+                Agents reply every 10 seconds — add your take anytime below
               </p>
             ) : null}
           </div>
@@ -769,11 +846,17 @@ export default function Home() {
             </div>
           ) : (
             <div className="mx-auto flex max-w-3xl flex-col gap-3">
-              {messages.map((m) => (
-                <MessageBubble key={m.turnId} role={m.role}>
-                  <p className="whitespace-pre-wrap">{m.content}</p>
-                </MessageBubble>
-              ))}
+              {messages.map((m) =>
+                m.role === "USER" ? (
+                  <UserMessageBubble key={m.turnId}>
+                    <p className="whitespace-pre-wrap">{m.content}</p>
+                  </UserMessageBubble>
+                ) : (
+                  <MessageBubble key={m.turnId} role={m.role}>
+                    <p className="whitespace-pre-wrap">{m.content}</p>
+                  </MessageBubble>
+                ),
+              )}
               {thinking ? <ThinkingRow role={thinking} /> : null}
 
               {summary && summary.length > 0 ? (
@@ -875,14 +958,43 @@ export default function Home() {
             </button>
           </div>
         ) : selectedId && debateActive ? (
-          <div className="shrink-0 border-t border-slate-200 bg-slate-50 px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-center text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 md:pb-2">
-            <span className="hidden md:inline">
-              Debate in progress — use End debate when you are done
-            </span>
-            <span className="md:hidden">
-              Tap the <span className="font-semibold">End</span> button (bottom
-              left) when you are done
-            </span>
+          <div className="shrink-0 border-t border-slate-200 bg-white px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-slate-800 dark:bg-slate-900 md:pb-3">
+            <p className="mb-2 text-center text-[11px] text-slate-500 dark:text-slate-400">
+              <span className="hidden md:inline">
+                Your message is woven in when it fits the topic — Pro and Contra
+                stay in character.
+              </span>
+              <span className="md:hidden">
+                Chime in anytime; agents pick it up when it fits.
+              </span>
+            </p>
+            <form
+              className="flex w-full items-stretch gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void sendInterjection();
+              }}
+            >
+              <label htmlFor="interject-chat" className="sr-only">
+                Your message to the debate
+              </label>
+              <input
+                id="interject-chat"
+                type="text"
+                value={interjectInput}
+                onChange={(e) => setInterjectInput(e.target.value)}
+                placeholder="Jump into the debate…"
+                disabled={interjectBusy}
+                className="h-11 min-w-0 flex-1 rounded-2xl border border-slate-600 bg-slate-900 px-4 text-sm text-slate-100 caret-violet-300 outline-none placeholder:text-slate-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/35 disabled:opacity-50 dark:border-slate-500 dark:bg-slate-950 dark:text-slate-50 dark:placeholder:text-slate-500 dark:focus:border-violet-400 dark:focus:ring-violet-400/30"
+              />
+              <button
+                type="submit"
+                disabled={interjectBusy || !interjectInput.trim()}
+                className="h-11 shrink-0 rounded-2xl bg-violet-600 px-5 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-40"
+              >
+                {interjectBusy ? "Sending…" : "Send"}
+              </button>
+            </form>
           </div>
         ) : null}
       </div>
@@ -891,7 +1003,9 @@ export default function Home() {
       <div
         className="pointer-events-none fixed left-4 z-40 flex flex-col gap-3 md:hidden"
         style={{
-          bottom: "max(5.5rem, calc(env(safe-area-inset-bottom, 0px) + 4.5rem))",
+          bottom: debateActive
+            ? "max(10rem, calc(env(safe-area-inset-bottom, 0px) + 8.5rem))"
+            : "max(5.5rem, calc(env(safe-area-inset-bottom, 0px) + 4.5rem))",
         }}
       >
         {debateActive ? (

@@ -16,7 +16,9 @@ function buildTranscript(
       const who =
         t.role === "PRO"
           ? "Pro (arguing FOR the topic)"
-          : "Contra (arguing AGAINST the topic)";
+          : t.role === "CONTRA"
+            ? "Contra (arguing AGAINST the topic)"
+            : "You (the human audience)";
       return `${who}: ${t.content.trim()}`;
     })
     .join("\n\n");
@@ -74,10 +76,13 @@ export async function generateDebateTurn(params: {
   const noRepeatRules =
     "Read the full transcript. Do NOT repeat any idea or example you (your side) already said—use a fresh angle, new reason, or new example each time. Do NOT restate the same claim in different words. You may briefly counter the other side, but your new content must be mostly new information, not repetition.";
 
+  const audienceRules =
+    'The transcript may include lines labeled "You (the human audience)"—the person watching typed those. If their latest note is clearly about this same topic, weave in a brief, natural response from your Pro or Contra role (agree, disagree, or add context). If it is off-topic, nonsense, or spam, ignore it and continue the debate—no lecturing.';
+
   const system =
     role === "PRO"
-      ? `You are Pro. Your ONLY job is to SUPPORT and DEFEND the topic below as true or good. You agree with it. Never argue against it or take Contra's side. Write like you're explaining to a curious teenager: very short sentences, only common words, zero jargon. Aim for 50–60 words (about 3–5 sentences). Never go over 60 words. ${noRepeatRules} Do not start with "Pro:" or similar.`
-      : `You are Contra. Your ONLY job is to OPPOSE and CHALLENGE the topic below. You disagree with it—argue it is false, harmful, or wrong. Never defend the topic or take Pro's side. Write like you're explaining to a curious teenager: very short sentences, only common words, zero jargon. Aim for 50–60 words (about 3–5 sentences). Never go over 60 words. ${noRepeatRules} Do not start with "Contra:" or similar.`;
+      ? `You are Pro. Your ONLY job is to SUPPORT and DEFEND the topic below as true or good. You agree with it. Never argue against it or take Contra's side. Write like you're explaining to a curious teenager: very short sentences, only common words, zero jargon. Aim for 50–60 words (about 3–5 sentences). Never go over 60 words. ${audienceRules} ${noRepeatRules} Do not start with "Pro:" or similar.`
+      : `You are Contra. Your ONLY job is to OPPOSE and CHALLENGE the topic below. You disagree with it—argue it is false, harmful, or wrong. Never defend the topic or take Pro's side. Write like you're explaining to a curious teenager: very short sentences, only common words, zero jargon. Aim for 50–60 words (about 3–5 sentences). Never go over 60 words. ${audienceRules} ${noRepeatRules} Do not start with "Contra:" or similar.`;
 
   const stance =
     role === "PRO"
@@ -158,7 +163,7 @@ export async function generateDebateSummary(params: {
 
   const { text } = await generateText({
     model: openai("gpt-4o-mini"),
-    system: `You summarize debates in very simple language. Pro supported the topic; Contra opposed it.
+    system: `You summarize debates in very simple language. Pro supported the topic; Contra opposed it. Lines from "You (the human audience)" are optional comments from the viewer—mention them in the summary only if they added something meaningful to the discussion.
 
 You MUST output exactly two labeled sections in this order:
 

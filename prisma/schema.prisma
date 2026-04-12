@@ -53,4 +53,6 @@ enum DebateStatus {
 enum SpeakerRole {
   PRO
   CONTRA
+  /// Human viewer chiming into the live debate (not an AI speaker)
+  USER
 }

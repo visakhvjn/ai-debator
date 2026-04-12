@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { SpeakerRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { userHasStoredOpenAiKey } from "@/lib/user-openai-key";
 
@@ -22,6 +23,7 @@ export async function countUserTurnsToday(userId: string): Promise<number> {
     where: {
       debate: { userId },
       createdAt: { gte: since },
+      role: { in: [SpeakerRole.PRO, SpeakerRole.CONTRA] },
     },
   });
 }
