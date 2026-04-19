@@ -284,6 +284,12 @@ export function MarketingHome() {
                   {user.displayName ?? user.email}
                 </span>
                 <Link
+                  href="/community"
+                  className="text-sm font-medium text-slate-600 hover:text-sky-600 dark:text-slate-300 dark:hover:text-sky-400"
+                >
+                  Community
+                </Link>
+                <Link
                   href="/debate"
                   className="rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600"
                 >

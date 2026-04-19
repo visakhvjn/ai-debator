@@ -49,6 +49,7 @@ export async function GET(req: Request) {
         originalTopic: debate.originalTopic,
         status: debate.status,
         updatedAt: debate.updatedAt.toISOString(),
+        isPublic: debate.isPublic,
         turns: debate.turns.map((t) => ({
           turnId: t.id,
           role: t.role,

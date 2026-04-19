@@ -2,15 +2,20 @@
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { CreditsModal } from "@/components/debate/CreditsModal";
+import {
+  MessageBubble,
+  ThinkingRow,
+  UserMessageBubble,
+} from "@/components/debate/transcript-bubbles";
 import { authedFetch } from "@/lib/client-authed-fetch";
 import { markDebatorLogoutIntent } from "@/lib/logout-intent";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 
 type Turn = {
@@ -83,105 +88,6 @@ function formatListTime(iso: string) {
   }
 }
 
-function MessageBubble({
-  role,
-  children,
-}: {
-  role: "PRO" | "CONTRA";
-  children: ReactNode;
-}) {
-  const isPro = role === "PRO";
-  return (
-    <div
-      className={`flex w-full gap-2 ${isPro ? "justify-start" : "justify-end"}`}
-    >
-      {isPro ? (
-        <div
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700 dark:bg-sky-900/60 dark:text-sky-200"
-          aria-hidden
-        >
-          P
-        </div>
-      ) : null}
-      <div
-        className={`max-w-[min(100%,28rem)] rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
-          isPro
-            ? "rounded-tl-sm border border-sky-100 bg-sky-50 text-slate-800 dark:border-sky-900/50 dark:bg-sky-950/40 dark:text-slate-100"
-            : "rounded-tr-sm border border-orange-100 bg-orange-50 text-slate-800 dark:border-orange-900/50 dark:bg-orange-950/35 dark:text-slate-100"
-        }`}
-      >
-        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-          {isPro ? "Pro" : "Contra"}
-        </p>
-        {children}
-      </div>
-      {!isPro ? (
-        <div
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-800 dark:bg-orange-900/60 dark:text-orange-200"
-          aria-hidden
-        >
-          C
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function UserMessageBubble({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex w-full gap-2 justify-start">
-      <div
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-100 text-xs font-bold text-violet-800 dark:bg-violet-900/60 dark:text-violet-200"
-        aria-hidden
-      >
-        U
-      </div>
-      <div className="max-w-[min(100%,28rem)] rounded-2xl rounded-tl-sm border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm leading-relaxed text-slate-800 shadow-sm dark:border-violet-800/60 dark:bg-violet-950/35 dark:text-slate-100">
-        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-300">
-          You
-        </p>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function ThinkingRow({ role }: { role: "PRO" | "CONTRA" }) {
-  const isPro = role === "PRO";
-  return (
-    <div
-      className={`flex w-full gap-2 ${isPro ? "justify-start" : "justify-end"}`}
-    >
-      {isPro ? (
-        <div
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700 dark:bg-sky-900/60 dark:text-sky-200"
-          aria-hidden
-        >
-          P
-        </div>
-      ) : null}
-      <div
-        className={`flex max-w-[min(100%,28rem)] items-center gap-2 rounded-2xl border border-dashed px-4 py-2.5 text-sm ${
-          isPro
-            ? "rounded-tl-sm border-sky-200 bg-sky-50/80 text-sky-900 dark:border-sky-800 dark:bg-sky-950/30 dark:text-sky-200"
-            : "rounded-tr-sm border-orange-200 bg-orange-50/80 text-orange-900 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-200"
-        }`}
-      >
-        <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-current opacity-70" />
-        {isPro ? "Pro is thinking…" : "Contra is thinking…"}
-      </div>
-      {!isPro ? (
-        <div
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-800 dark:bg-orange-900/60 dark:text-orange-200"
-          aria-hidden
-        >
-          C
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 export default function Home() {
   const router = useRouter();
   const { signOut } = useAuth();
@@ -210,6 +116,9 @@ export default function Home() {
   const [creditsModalOpen, setCreditsModalOpen] = useState(false);
   const [interjectInput, setInterjectInput] = useState("");
   const [interjectBusy, setInterjectBusy] = useState(false);
+
+  const [isPublic, setIsPublic] = useState(false);
+  const [publicBusy, setPublicBusy] = useState(false);
 
   const endedRef = useRef(false);
   endedRef.current = ended;
@@ -309,6 +218,7 @@ export default function Home() {
         setSummary(null);
         setClosingRemark(null);
       }
+      setIsPublic(d.isPublic === true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
       setSelectedId(null);
@@ -316,6 +226,7 @@ export default function Home() {
       setMessages([]);
       setCurrentTopic("");
       setOriginalUserTopic(null);
+      setIsPublic(false);
     } finally {
       setLoadingDebate(false);
     }
@@ -335,6 +246,7 @@ export default function Home() {
     setError(null);
     setEndBusy(false);
     setInterjectInput("");
+    setIsPublic(false);
   }, [debateActive]);
 
   const startDebate = useCallback(async () => {
@@ -420,6 +332,7 @@ export default function Home() {
       setClosingRemark(
         typeof data.closingRemark === "string" ? data.closingRemark : "",
       );
+      setIsPublic(false);
       await refreshDebates();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
@@ -429,6 +342,39 @@ export default function Home() {
       setEndBusy(false);
     }
   }, [debateId, refreshDebates, router]);
+
+  const setDebatePublic = useCallback(
+    async (next: boolean) => {
+      if (!debateId) return;
+      setPublicBusy(true);
+      setError(null);
+      try {
+        const res = await authedFetch("/api/debate/public", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ debateId, isPublic: next }),
+        });
+        if (res.status === 401) {
+          router.replace("/?signin=required");
+          return;
+        }
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(
+            typeof data.error === "string" && data.error.trim()
+              ? data.error.trim()
+              : "Could not update sharing",
+          );
+        }
+        setIsPublic(data.isPublic === true);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Something went wrong");
+      } finally {
+        setPublicBusy(false);
+      }
+    },
+    [debateId, router],
+  );
 
   useEffect(() => {
     if (!debateId || ended) return undefined;
@@ -631,6 +577,12 @@ export default function Home() {
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Pro vs Contra
               </p>
+              <Link
+                href="/community"
+                className="mt-1 inline-block text-xs font-medium text-sky-600 hover:underline dark:text-sky-400"
+              >
+                Community
+              </Link>
             </div>
             {credits ? (
               <button
@@ -887,6 +839,58 @@ export default function Home() {
                       </p>
                     </div>
                   ) : null}
+
+                  <div className="mt-5 border-t border-slate-200 pt-5 dark:border-slate-600">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      Community
+                    </h3>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                      If you make this debate public, it will appear on the
+                      Community page. Anyone can open it there, read the topic,
+                      the full back-and-forth (including lines you added as
+                      &quot;You&quot;), and this summary. They cannot change the
+                      debate or use your account. You can make it private again
+                      anytime; it then disappears from Community.
+                    </p>
+                    {isPublic ? (
+                      <div className="mt-4 space-y-3">
+                        <p className="text-sm text-slate-700 dark:text-slate-200">
+                          This debate is public.{" "}
+                          <Link
+                            href={`/community/${debateId}`}
+                            className="font-medium text-sky-600 underline-offset-2 hover:underline dark:text-sky-400"
+                          >
+                            View on Community
+                          </Link>{" "}
+                          or{" "}
+                          <Link
+                            href="/community"
+                            className="font-medium text-sky-600 underline-offset-2 hover:underline dark:text-sky-400"
+                          >
+                            browse all public debates
+                          </Link>
+                          .
+                        </p>
+                        <button
+                          type="button"
+                          disabled={publicBusy}
+                          onClick={() => void setDebatePublic(false)}
+                          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 sm:w-auto"
+                        >
+                          {publicBusy ? "Saving…" : "Make private"}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={publicBusy}
+                        onClick={() => void setDebatePublic(true)}
+                        className="mt-4 w-full rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                      >
+                        {publicBusy ? "Saving…" : "Make public"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               ) : null}
             </div>

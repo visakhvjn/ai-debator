@@ -29,8 +29,11 @@ model Debate {
   turns     Turn[]
   /// Stored when debate ends: { "bullets": string[], "closingRemark"?: string }
   debateSummary Json?
+  /// Listed on `/community` when true (ended debates only).
+  isPublic Boolean @default(false)
 
   @@index([userId])
+  @@index([isPublic, status])
 }
 
 model Turn {
