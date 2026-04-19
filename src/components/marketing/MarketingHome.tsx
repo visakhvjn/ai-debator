@@ -65,6 +65,25 @@ function IconSummary({ className }: { className?: string }) {
   );
 }
 
+function IconCommunity({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"
+      />
+    </svg>
+  );
+}
+
 /** Decorative scene: two sides, one topic — no implementation details. */
 function DebateSceneIllustration({ className }: { className?: string }) {
   return (
@@ -275,46 +294,49 @@ export function MarketingHome() {
           <Link href="/" className="text-lg font-bold tracking-tight text-sky-600 dark:text-sky-400">
             AI Debator
           </Link>
-          <nav className="flex items-center gap-2 sm:gap-3">
-            {loading ? (
-              <span className="h-8 w-8 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700" />
-            ) : user ? (
-              <>
-                <span className="hidden max-w-[10rem] truncate text-sm text-slate-600 dark:text-slate-300 sm:inline">
-                  {user.displayName ?? user.email}
-                </span>
-                <Link
-                  href="/community"
-                  className="text-sm font-medium text-slate-600 hover:text-sky-600 dark:text-slate-300 dark:hover:text-sky-400"
-                >
-                  Community
-                </Link>
-                <Link
-                  href="/debate"
-                  className="rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600"
-                >
-                  Open app
-                </Link>
+          <div className="flex min-w-0 flex-1 flex-row-reverse items-center justify-end gap-3 sm:flex-row sm:gap-8">
+            <Link
+              href="/community"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg py-1.5 pl-1 pr-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100/80 hover:text-sky-600 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-sky-400 sm:-ml-2"
+            >
+              <IconCommunity className="h-4 w-4 shrink-0 opacity-90" />
+              Community
+            </Link>
+            <nav className="flex min-w-0 shrink-0 items-center justify-end gap-2 sm:gap-3">
+              {loading ? (
+                <span className="h-8 w-8 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700" />
+              ) : user ? (
+                <>
+                  <span className="hidden max-w-[10rem] truncate text-sm text-slate-600 dark:text-slate-300 sm:inline">
+                    {user.displayName ?? user.email}
+                  </span>
+                  <Link
+                    href="/debate"
+                    className="rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600"
+                  >
+                    Open app
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => void signOut()}
+                    className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    Sign out
+                  </button>
+                </>
+              ) : (
                 <button
                   type="button"
-                  onClick={() => void signOut()}
-                  className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+                  onClick={() => void onGoogleSignIn()}
+                  disabled={signingIn}
+                  className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 disabled:opacity-50 sm:inline-flex dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
                 >
-                  Sign out
+                  <GoogleIcon className="h-4 w-4 text-[#4285F4]" />
+                  {signingIn ? "Signing in…" : "Sign in with Google"}
                 </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={() => void onGoogleSignIn()}
-                disabled={signingIn}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
-              >
-                <GoogleIcon className="h-4 w-4 text-[#4285F4]" />
-                {signingIn ? "Signing in…" : "Sign in with Google"}
-              </button>
-            )}
-          </nav>
+              )}
+            </nav>
+          </div>
         </div>
       </header>
 
@@ -323,7 +345,7 @@ export function MarketingHome() {
           className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100"
           role="status"
         >
-          Sign in to open the debate room.
+          Sign in with Google to use the debate room or browse Community.
         </div>
       ) : null}
       {configureFirebase ? (

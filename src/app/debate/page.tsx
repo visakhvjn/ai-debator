@@ -3,6 +3,10 @@
 import { useAuth } from "@/components/auth/AuthProvider";
 import { CreditsModal } from "@/components/debate/CreditsModal";
 import {
+  DebateSidebar,
+  IconMenu,
+} from "@/components/debate/DebateSidebar";
+import {
   MessageBubble,
   ThinkingRow,
   UserMessageBubble,
@@ -65,29 +69,6 @@ function parseCredits(raw: unknown): CreditsState | null {
   return null;
 }
 
-function formatListTime(iso: string) {
-  try {
-    const d = new Date(iso);
-    const now = new Date();
-    const sameDay =
-      d.getDate() === now.getDate() &&
-      d.getMonth() === now.getMonth() &&
-      d.getFullYear() === now.getFullYear();
-    if (sameDay) {
-      return d.toLocaleTimeString(undefined, {
-        hour: "numeric",
-        minute: "2-digit",
-      });
-    }
-    return d.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-    });
-  } catch {
-    return "";
-  }
-}
-
 export default function Home() {
   const router = useRouter();
   const { signOut } = useAuth();
@@ -119,6 +100,7 @@ export default function Home() {
 
   const [isPublic, setIsPublic] = useState(false);
   const [publicBusy, setPublicBusy] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const endedRef = useRef(false);
   endedRef.current = ended;
@@ -566,138 +548,99 @@ export default function Home() {
     return () => cancelAnimationFrame(id);
   }, [summary]);
 
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileMenuOpen]);
+
   return (
     <div className="flex h-dvh max-h-dvh min-h-0 w-full flex-1 items-stretch overflow-hidden bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
-      {/* Sidebar — past debates (tablet/desktop only) */}
-      <aside className="hidden h-dvh max-h-dvh min-h-0 w-72 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 md:flex">
-        <div className="shrink-0 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h1 className="text-lg font-semibold tracking-tight">AI Debate</h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Pro vs Contra
-              </p>
-              <Link
-                href="/community"
-                className="mt-1 inline-block text-xs font-medium text-sky-600 hover:underline dark:text-sky-400"
-              >
-                Community
-              </Link>
-            </div>
-            {credits ? (
-              <button
-                type="button"
-                onClick={() => setCreditsModalOpen(true)}
-                title={
-                  credits.unlimited
-                    ? "Your OpenAI key — unlimited messages. Click for details."
-                    : `${credits.remaining} message${credits.remaining === 1 ? "" : "s"} left today (each Pro or Contra reply uses 1). Resets ${new Date(credits.resetsAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })} UTC. Click for details.`
-                }
-                className={`shrink-0 cursor-pointer rounded-lg border px-2.5 py-1.5 text-right transition hover:opacity-90 active:scale-[0.98] ${
-                  credits.unlimited
-                    ? "border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/40"
-                    : credits.remaining <= 5
-                      ? "border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40"
-                      : "border-sky-200 bg-sky-50 dark:border-sky-800 dark:bg-sky-950/50"
-                }`}
-              >
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  Credits
-                </p>
-                <p className="text-base font-bold leading-tight text-slate-900 dark:text-white">
-                  {credits.unlimited ? (
-                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
-                      Unlimited
-                    </span>
-                  ) : (
-                    <>
-                      <span className="tabular-nums">{credits.remaining}</span>
-                      <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
-                        /{credits.limit}
-                      </span>
-                    </>
-                  )}
-                </p>
-              </button>
-            ) : (
-              <span className="shrink-0 text-xs text-slate-400" aria-hidden>
-                …
-              </span>
-            )}
-          </div>
-        </div>
+      {/* Sidebar — tablet/desktop */}
+      <aside className="hidden h-dvh max-h-dvh min-h-0 w-72 shrink-0 flex-col overflow-hidden border-r border-slate-200 md:flex dark:border-slate-800">
+        <DebateSidebar
+          credits={credits}
+          loadingList={loadingList}
+          debates={sidebarDebates}
+          selectedId={selectedId}
+          onSelectDebate={(id) => void loadDebate(id)}
+          onNewDebate={startNewChat}
+          onOpenCredits={() => setCreditsModalOpen(true)}
+          debateActive={debateActive}
+          outOfCredits={outOfCredits}
+        />
+      </aside>
+
+      {/* Mobile: slide-in menu (same as sidebar) */}
+      <div
+        className={`fixed inset-0 z-50 md:hidden ${
+          mobileMenuOpen ? "pointer-events-auto" : "pointer-events-none"
+        }`}
+        aria-hidden={!mobileMenuOpen}
+      >
         <button
           type="button"
-          onClick={startNewChat}
-          disabled={debateActive || outOfCredits}
-          title={
-            debateActive
-              ? "End the current debate before starting a new one"
-              : outOfCredits
-                ? "No credits left today — resets at midnight UTC"
-                : undefined
-          }
-          className="mx-3 mt-3 shrink-0 rounded-xl bg-sky-500 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-sky-500 dark:bg-sky-600 dark:hover:bg-sky-500 dark:disabled:hover:bg-sky-600"
+          aria-label="Close menu"
+          className={`absolute inset-0 bg-slate-900/45 transition-opacity dark:bg-black/55 ${
+            mobileMenuOpen ? "opacity-100" : "opacity-0"
+          }`}
+          onClick={() => setMobileMenuOpen(false)}
+        />
+        <div
+          className={`absolute left-0 top-0 flex h-dvh max-h-dvh w-[min(18rem,88vw)] flex-col border-r border-slate-200 bg-white shadow-2xl transition-transform duration-300 ease-out dark:border-slate-800 dark:bg-slate-900 ${
+            mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Debates and navigation"
         >
-          New debate
-        </button>
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain px-2 pb-4 [-webkit-overflow-scrolling:touch]">
-          <p className="px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-            Recent
-          </p>
-          {loadingList ? (
-            <p className="px-2 text-sm text-slate-400">Loading…</p>
-          ) : sidebarDebates.length === 0 ? (
-            <p className="px-2 text-sm text-slate-400">No debates yet.</p>
-          ) : (
-            <ul className="space-y-1">
-              {sidebarDebates.map((d) => (
-                <li key={d.id}>
-                  <button
-                    type="button"
-                    onClick={() => void loadDebate(d.id)}
-                    className={`flex w-full flex-col rounded-xl px-3 py-2.5 text-left text-sm transition hover:bg-slate-100 dark:hover:bg-slate-800 ${
-                      selectedId === d.id
-                        ? "bg-sky-50 ring-1 ring-sky-200 dark:bg-sky-950/50 dark:ring-sky-800"
-                        : ""
-                    }`}
-                  >
-                    <span className="line-clamp-2 font-medium text-slate-800 dark:text-slate-100">
-                      {d.topic}
-                    </span>
-                    <span className="mt-1 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-                      <span
-                        className={
-                          d.status === "ACTIVE"
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : ""
-                        }
-                      >
-                        {d.status === "ACTIVE" ? "Live" : "Ended"}
-                      </span>
-                      <span>·</span>
-                      <span>{formatListTime(d.updatedAt)}</span>
-                      {d.turnCount > 0 ? (
-                        <>
-                          <span>·</span>
-                          <span>{d.turnCount} msgs</span>
-                        </>
-                      ) : null}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          </div>
+          <DebateSidebar
+            credits={credits}
+            loadingList={loadingList}
+            debates={sidebarDebates}
+            selectedId={selectedId}
+            onSelectDebate={(id) => {
+              void loadDebate(id);
+              setMobileMenuOpen(false);
+            }}
+            onNewDebate={startNewChat}
+            onOpenCredits={() => {
+              setCreditsModalOpen(true);
+              setMobileMenuOpen(false);
+            }}
+            debateActive={debateActive}
+            outOfCredits={outOfCredits}
+            showClose
+            onClose={() => setMobileMenuOpen(false)}
+          />
         </div>
-      </aside>
+      </div>
 
       {/* Main chat */}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
-          <div className="min-w-0">
+        <header className="flex shrink-0 items-center gap-2 border-b border-slate-200 bg-white px-3 py-3 sm:px-4 dark:border-slate-800 dark:bg-slate-900">
+          <button
+            type="button"
+            className="shrink-0 rounded-lg p-2 text-slate-600 transition hover:bg-slate-100 md:hidden dark:text-slate-300 dark:hover:bg-slate-800"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Open debates menu"
+            aria-expanded={mobileMenuOpen}
+          >
+            <IconMenu className="h-6 w-6" />
+          </button>
+          <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <h2 className="truncate text-base font-semibold text-slate-900 dark:text-slate-50">
                 {isNewChat
@@ -735,7 +678,7 @@ export default function Home() {
               </p>
             ) : null}
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             {debateActive ? (
               <button
                 type="button"
