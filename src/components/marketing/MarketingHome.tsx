@@ -6,6 +6,7 @@ import { useCallback, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { signInWithGoogle } from "@/components/auth/signInWithGoogle";
 import { isFirebaseConfigured } from "@/lib/firebase";
+import { SampleDebateSnapshot } from "@/components/marketing/SampleDebateSnapshot";
 
 function IconNeutralFraming({ className }: { className?: string }) {
   return (
@@ -364,49 +365,64 @@ export function MarketingHome() {
       ) : null}
 
       <main>
-        {/* Hero */}
-        <section className="mx-auto max-w-6xl px-4 pb-16 pt-14 text-center sm:px-6 sm:pb-24 sm:pt-20">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600 dark:text-sky-400">
-            Pro vs Contra — live
-          </p>
-          <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl md:text-6xl dark:text-white">
-            Watch two AI agents
-            <span className="text-sky-600 dark:text-sky-400"> debate </span>
-            any topic
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-600 dark:text-slate-300">
-            You pick the subject. We turn it into a fair, neutral claim. Then{" "}
-            <strong className="text-slate-800 dark:text-slate-100">Pro</strong>{" "}
-            argues for it and{" "}
-            <strong className="text-slate-800 dark:text-slate-100">Contra</strong>{" "}
-            against it — short turns, real back-and-forth, and a summary when you
-            end the session.
-          </p>
-          <div className="mt-10 flex flex-col items-center justify-center gap-3">
-            {user ? (
-              <Link
-                href="/debate"
-                className="inline-flex w-full max-w-xs items-center justify-center rounded-full bg-sky-500 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-600 sm:w-auto"
-              >
-                Go to debate room
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={() => void onGoogleSignIn()}
-                disabled={signingIn || !isFirebaseConfigured()}
-                className="inline-flex w-full max-w-xs items-center justify-center gap-2 rounded-full bg-sky-500 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-600 disabled:opacity-50 sm:w-auto"
-              >
-                <GoogleIcon className="h-5 w-5 text-white" />
-                {signingIn ? "Signing in…" : "Get started with Google"}
-              </button>
-            )}
-            <a
-              href="#plans"
-              className="block text-sm font-semibold text-slate-600 underline-offset-4 hover:underline dark:text-slate-400"
-            >
-              View plans
-            </a>
+        {/* Hero — two columns: story + sample snapshot */}
+        <section className="mx-auto max-w-6xl px-4 pb-16 pt-14 sm:px-6 sm:pb-24 sm:pt-20">
+          <div className="grid gap-12 lg:grid-cols-2 lg:items-start lg:gap-16">
+            <div className="mx-auto max-w-xl text-center lg:mx-0 lg:max-w-lg lg:text-left">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600 dark:text-sky-400">
+                Pro vs Contra — live
+              </p>
+              <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl lg:text-5xl xl:text-6xl dark:text-white">
+                Watch two AI agents
+                <span className="text-sky-600 dark:text-sky-400"> debate </span>
+                any topic
+              </h1>
+              <p className="mt-6 text-lg leading-relaxed text-slate-600 dark:text-slate-300">
+                <strong className="text-slate-800 dark:text-slate-100">
+                  AI Debator
+                </strong>{" "}
+                is a simple debate room: you choose a subject, we rephrase it into
+                a balanced claim when needed, then two agents take turns —{" "}
+                <strong className="text-slate-800 dark:text-slate-100">Pro</strong>{" "}
+                for and{" "}
+                <strong className="text-slate-800 dark:text-slate-100">Contra</strong>{" "}
+                against. You can chime in, follow along on a steady rhythm, and end
+                whenever you want a written summary. Past debates stay in your
+                sidebar; you can also share finished ones on Community.
+              </p>
+              <div className="mt-10 flex flex-row flex-wrap items-center justify-center gap-3 lg:justify-start">
+                {user ? (
+                  <Link
+                    href="/debate"
+                    className="inline-flex shrink-0 items-center justify-center rounded-full bg-sky-500 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-600"
+                  >
+                    Go to debate room
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => void onGoogleSignIn()}
+                    disabled={signingIn || !isFirebaseConfigured()}
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-sky-500 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-600 disabled:opacity-50"
+                  >
+                    <GoogleIcon className="h-5 w-5 text-white" />
+                    {signingIn ? "Signing in…" : "Get started with Google"}
+                  </button>
+                )}
+                <a
+                  href="#plans"
+                  className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white/80 px-6 py-3.5 text-sm font-medium text-slate-500 shadow-none transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 dark:border-slate-600 dark:bg-slate-900/50 dark:text-slate-400 dark:hover:border-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                >
+                  View plans
+                </a>
+              </div>
+            </div>
+
+            <div className="mx-auto flex w-full max-w-md justify-center lg:mx-0 lg:max-w-none lg:justify-end">
+              <div className="w-full max-w-md lg:sticky lg:top-24">
+                <SampleDebateSnapshot />
+              </div>
+            </div>
           </div>
         </section>
 
