@@ -517,6 +517,79 @@ export function MarketingHome() {
           </div>
         </section>
 
+        {/* Community debates */}
+        <section
+          id="community-debates"
+          className="border-t border-slate-200 bg-gradient-to-b from-slate-50 to-white py-16 dark:border-slate-800 dark:from-slate-900/90 dark:to-slate-950 sm:py-20"
+        >
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <h2 className="text-center text-3xl font-bold text-slate-900 dark:text-white">
+              Community debates
+            </h2>
+            <p className="mx-auto mt-4 max-w-3xl text-center text-lg leading-relaxed text-slate-600 dark:text-slate-300">
+              When a debate ends, you can choose to make it{" "}
+              <strong className="text-slate-800 dark:text-slate-100">public</strong>
+              . It then appears on{" "}
+              <strong className="text-slate-800 dark:text-slate-100">Community</strong>{" "}
+              — a shared library of finished debates other signed-in users can open
+              and read. Nothing is public by default; you can take a debate private
+              again anytime.
+            </p>
+            <ul className="mx-auto mt-10 max-w-2xl space-y-4 text-left text-slate-600 dark:text-slate-400">
+              <li className="flex gap-3">
+                <span className="shrink-0 font-semibold text-sky-600 dark:text-sky-400">
+                  ✓
+                </span>
+                <span>
+                  <strong className="text-slate-800 dark:text-slate-200">
+                    Learn from real threads
+                  </strong>{" "}
+                  — skim how Pro and Contra handled a topic you care about, without
+                  starting from scratch.
+                </span>
+              </li>
+              <li className="flex gap-3">
+                <span className="shrink-0 font-semibold text-sky-600 dark:text-sky-400">
+                  ✓
+                </span>
+                <span>
+                  <strong className="text-slate-800 dark:text-slate-200">
+                    Share strong work
+                  </strong>{" "}
+                  — when the back-and-forth turned out well, a public link lets
+                  friends, classmates, or teammates read the same transcript and
+                  summary you see.
+                </span>
+              </li>
+              <li className="flex gap-3">
+                <span className="shrink-0 font-semibold text-sky-600 dark:text-sky-400">
+                  ✓
+                </span>
+                <span>
+                  <strong className="text-slate-800 dark:text-slate-200">
+                    Stay in control
+                  </strong>{" "}
+                  — Community only lists debates you explicitly publish after they
+                  end. Viewer lines you added stay in the transcript; you can unpublish
+                  whenever you like.
+                </span>
+              </li>
+            </ul>
+            <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-slate-500 dark:text-slate-500">
+              Community is for signed-in users. From the debate room, use the
+              sidebar link or publish an ended debate from the summary card.
+            </p>
+            <div className="mt-8 flex justify-center">
+              <Link
+                href="/community"
+                className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-sky-700 dark:hover:bg-sky-950/50 dark:hover:text-sky-200"
+              >
+                Open Community
+              </Link>
+            </div>
+          </div>
+        </section>
+
         {/* Plans */}
         <section
           id="plans"
